@@ -4,7 +4,7 @@
   <img src="android/app/src/main/res/drawable/ic_launcher.png" width="120" height="120" alt="LvLv ProTuner Icon" />
 </p>
 
-**律吕 ProTuner** 是一款专为**东西方弦乐与民乐（二胡、古筝、琵琶、古琴、中阮、柳琴、吉他、小提琴、大提琴、尤克里里、贝斯及十二平均律）**打造的 Apple 设计风格高精防抖调音器，支持 Android 原生安装与 Web 离线运行。
+**律吕 ProTuner** 是一款专为东西方弦乐与民乐（二胡、古筝、琵琶、古琴、中阮、柳琴、吉他、小提琴、大提琴、尤克里里、贝斯及十二平均律）打造的 高精防抖调音器，支持 Android 原生安装与 Web 离线运行。
 
 ---
 
