@@ -1,0 +1,1666 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#000000" />
+  <title>律吕调音器</title>
+  <style>
+    :root {
+      --bg: #000000;
+      --card: #161618;
+      --card-elevated: #222225;
+      --pill: #2C2C2E;
+      --border: rgba(255, 255, 255, 0.09);
+      --text: #FFFFFF;
+      --text-sub: #98989F;
+      --text-muted: #636366;
+      --green: #30D158;
+      --green-dim: rgba(48, 209, 88, 0.16);
+      --amber: #FF9F0A;
+      --amber-dim: rgba(255, 159, 10, 0.16);
+      --red: #FF453A;
+      --red-dim: rgba(255, 69, 58, 0.16);
+      --blue: #0A84FF;
+      --blue-dim: rgba(10, 132, 255, 0.18);
+    }
+    html.light {
+      --bg: #F2F2F7;
+      --card: #FFFFFF;
+      --card-elevated: #F2F2F7;
+      --pill: #E5E5EA;
+      --border: rgba(0, 0, 0, 0.08);
+      --text: #1C1C1E;
+      --text-sub: #636366;
+      --text-muted: #8E8E93;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "MiSans", "HarmonyOS Sans SC", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      touch-action: manipulation;
+    }
+    button, input, select {
+      font: inherit;
+      color: inherit;
+      background: none;
+      border: none;
+      outline: none;
+    }
+    /* Main Fixed App Shell - Never Scrolls or Shifts */
+    .app-shell {
+      position: fixed;
+      inset: 0;
+      max-width: 480px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 12px 16px 16px;
+      background: var(--bg);
+      overflow: hidden;
+    }
+
+    /* 1. Top Header Bar (Fixed 48px) */
+    .top-bar {
+      height: 48px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .inst-selector-btn {
+      height: 40px;
+      padding: 0 14px;
+      border-radius: 20px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      min-width: 0;
+      flex: 1;
+      max-width: 240px;
+    }
+    .inst-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--green);
+      flex-shrink: 0;
+    }
+    .inst-selector-name {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .pill-btn {
+      height: 36px;
+      padding: 0 11px;
+      border-radius: 18px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-sub);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .pill-btn.active-green {
+      background: var(--green-dim);
+      color: var(--green);
+      border-color: rgba(48, 209, 88, 0.35);
+    }
+    .icon-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 18px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 15px;
+    }
+
+    /* 2. Center Tuner Stage (Locked Flex Area) */
+    .tuner-stage {
+      flex: 1;
+      min-height: 0;
+      margin: 10px 0;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* 3-State Direction Header inside Stage (Fixed 34px) */
+    .direction-header {
+      width: 100%;
+      height: 34px;
+      flex-shrink: 0;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 0 4px;
+    }
+    .dir-left {
+      text-align: left;
+      color: var(--text-muted);
+      transition: color 0.15s;
+    }
+    .dir-center {
+      padding: 5px 14px;
+      border-radius: 999px;
+      background: var(--pill);
+      color: var(--text-sub);
+      font-size: 13px;
+      font-weight: 700;
+      min-width: 136px;
+      text-align: center;
+      transition: background 0.15s, color 0.15s;
+    }
+    .dir-right {
+      text-align: right;
+      color: var(--text-muted);
+      transition: color 0.15s;
+    }
+    .dir-left.lit { color: var(--amber); }
+    .dir-right.lit { color: var(--red); }
+    .dir-center.lit-green { background: var(--green); color: #000000; }
+    .dir-center.lit-blue { background: var(--blue); color: #FFFFFF; }
+    .dir-center.lit-amber { background: var(--amber-dim); color: var(--amber); }
+    .dir-center.lit-red { background: var(--red-dim); color: var(--red); }
+
+    /* Gauge Canvas Wrapper (Fixed Aspect, Never Resizes) */
+    .gauge-box {
+      width: 100%;
+      max-width: 360px;
+      height: 185px;
+      flex-shrink: 0;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #gaugeCanvas {
+      width: 340px;
+      height: 180px;
+      display: block;
+    }
+
+    /* Fixed-Height Digital Readout Block (Zero Layout Shift) */
+    .readout-box {
+      width: 100%;
+      height: 112px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+    .note-row {
+      height: 64px;
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+    .main-note {
+      font-size: 58px;
+      line-height: 64px;
+      font-weight: 800;
+      letter-spacing: -1.5px;
+      font-variant-numeric: tabular-nums;
+    }
+    .note-badge {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-sub);
+    }
+    .freq-row {
+      height: 24px;
+      line-height: 24px;
+      font-size: 13px;
+      color: var(--text-sub);
+      font-family: "SF Mono", "JetBrains Mono", monospace;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .notation-hint {
+      height: 20px;
+      line-height: 20px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* 3. Bottom Control Dock (Fixed Height) */
+    .bottom-dock {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* String Selector Header Row */
+    .string-header-row {
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .seg-control {
+      display: flex;
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 2px;
+      border-radius: 10px;
+    }
+    .seg-btn {
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-sub);
+      cursor: pointer;
+    }
+    .seg-btn.active {
+      background: var(--pill);
+      color: var(--text);
+    }
+    .preset-pill-select {
+      height: 30px;
+      padding: 0 10px;
+      border-radius: 10px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-sub);
+      max-width: 190px;
+    }
+
+    /* String Pills Strip (Fixed 64px Height, Horizontal Scroll) */
+    .strings-strip {
+      height: 64px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .strings-strip::-webkit-scrollbar {
+      display: none;
+    }
+    .string-btn {
+      height: 60px;
+      min-width: 78px;
+      flex: 1;
+      padding: 0 10px;
+      border-radius: 16px;
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .string-btn.green-mark {
+      border-color: rgba(48, 209, 88, 0.35);
+    }
+    .string-btn.active {
+      background: var(--green);
+      border-color: var(--green);
+      color: #000000;
+    }
+    .string-btn .s-label {
+      font-size: 11px;
+      font-weight: 600;
+      opacity: 0.8;
+    }
+    .string-btn .s-note {
+      font-size: 17px;
+      font-weight: 800;
+      line-height: 20px;
+      font-variant-numeric: tabular-nums;
+    }
+    .string-btn .s-hz {
+      font-size: 10px;
+      opacity: 0.75;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Primary Bottom Action Bar (Fixed 50px Height) */
+    .action-bar {
+      height: 50px;
+      display: grid;
+      grid-template-columns: 1fr 1.35fr;
+      gap: 10px;
+    }
+    .btn-ref-tone {
+      height: 50px;
+      border-radius: 16px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--blue);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+    .btn-ref-tone.playing {
+      background: var(--blue);
+      color: #FFFFFF;
+      border-color: var(--blue);
+    }
+    .btn-mic-main {
+      height: 50px;
+      border-radius: 16px;
+      background: var(--green);
+      color: #000000;
+      font-size: 15px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+    .btn-mic-main.listening {
+      background: var(--card);
+      border: 1.5px solid var(--green);
+      color: var(--green);
+    }
+    .mic-level-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    /* Bottom Sheet Modal (iOS Style Drawer for Instrument Library & Custom Sorting) */
+    .sheet-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      z-index: 100;
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .sheet-backdrop.open {
+      display: flex;
+    }
+    .sheet-panel {
+      width: 100%;
+      max-width: 480px;
+      height: 82vh;
+      background: var(--card);
+      border-top-left-radius: 28px;
+      border-top-right-radius: 28px;
+      border-top: 1px solid var(--border);
+      padding: 14px 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .sheet-handle {
+      width: 40px;
+      height: 5px;
+      border-radius: 3px;
+      background: var(--text-muted);
+      opacity: 0.4;
+      margin: 0 auto 2px;
+    }
+    .sheet-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .sheet-title {
+      font-size: 17px;
+      font-weight: 700;
+    }
+    .cat-tabs {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      background: var(--card-elevated);
+      padding: 4px;
+      border-radius: 14px;
+    }
+    .cat-tab {
+      height: 32px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-sub);
+      cursor: pointer;
+    }
+    .cat-tab.active {
+      background: var(--pill);
+      color: var(--text);
+    }
+    .inst-list {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding-bottom: 12px;
+    }
+    .inst-item {
+      min-height: 64px;
+      padding: 10px 12px;
+      border-radius: 16px;
+      background: var(--card-elevated);
+      border: 1.5px solid transparent;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      cursor: pointer;
+    }
+    .inst-item.selected {
+      border-color: var(--green);
+      background: var(--green-dim);
+    }
+    .inst-item-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+      flex: 1;
+    }
+    .inst-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: 800;
+      color: #FFFFFF;
+      flex-shrink: 0;
+    }
+    .inst-meta {
+      min-width: 0;
+      flex: 1;
+    }
+    .inst-meta-title {
+      font-size: 15px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .inst-tag {
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 6px;
+      background: var(--pill);
+      color: var(--text-sub);
+      font-weight: 600;
+    }
+    .inst-meta-sub {
+      font-size: 12px;
+      color: var(--text-sub);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 2px;
+    }
+    .inst-item-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .mini-btn {
+      height: 30px;
+      min-width: 30px;
+      padding: 0 8px;
+      border-radius: 8px;
+      background: var(--pill);
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .star-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 17px;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text-muted);
+    }
+    .star-btn.fav {
+      color: var(--amber);
+    }
+
+    /* Custom Instrument Creator Form inside Sheet */
+    .custom-form-box {
+      display: none;
+      padding: 12px;
+      border-radius: 16px;
+      background: var(--card-elevated);
+      border: 1px solid var(--border);
+      flex-direction: column;
+      gap: 8px;
+    }
+    .custom-form-box.open {
+      display: flex;
+    }
+    .form-input {
+      height: 38px;
+      padding: 0 12px;
+      border-radius: 10px;
+      background: var(--pill);
+      font-size: 13px;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+
+  <main class="app-shell">
+    <!-- 1. TOP BAR -->
+    <header class="top-bar">
+      <button id="btnOpenInstSheet" type="button" class="inst-selector-btn">
+        <span id="topInstDot" class="inst-dot"></span>
+        <span id="topInstName" class="inst-selector-name">二胡 · 标准 D4-A4</span>
+        <span style="font-size: 11px; color: var(--text-sub);">▼</span>
+      </button>
+
+      <div class="top-actions">
+        <button id="btnCycleDsp" type="button" class="pill-btn active-green" title="切换防抖稳音强度">
+          <span id="dspBtnText">稳音: 强(二胡)</span>
+        </button>
+        <button id="btnCycleA4" type="button" class="pill-btn" title="点击切换A4基准频率">
+          <span id="a4BtnText">440Hz</span>
+        </button>
+        <button id="btnToggleTheme" type="button" class="icon-btn" title="切换深浅色">◐</button>
+      </div>
+    </header>
+
+    <!-- 2. CENTER TUNER STAGE (LOCKED LAYOUT - ZERO JUMPING) -->
+    <section class="tuner-stage">
+      <!-- 3-State Direction Bar -->
+      <div class="direction-header">
+        <div id="dirLeft" class="dir-left">← 偏低拧紧</div>
+        <div id="dirCenter" class="dir-center">等待发音</div>
+        <div id="dirRight" class="dir-right">偏高放松 →</div>
+      </div>
+
+      <!-- Precision Semicircular Apple Gauge -->
+      <div class="gauge-box">
+        <canvas id="gaugeCanvas" width="680" height="360"></canvas>
+      </div>
+
+      <!-- Fixed-Height Digital Readout -->
+      <div class="readout-box">
+        <div id="btnCycleNotation" class="note-row" title="点击切换 音名 / 简谱 / 唱名">
+          <span id="mainNoteText" class="main-note">D4</span>
+          <span id="subNoteBadge" class="note-badge">内弦 · 1 (Re)</span>
+        </div>
+        <div id="freqReadoutText" class="freq-row">目标 293.7 Hz · 实测 --.- Hz</div>
+        <div class="notation-hint">点击上方音名可切换：音名(D4) / 简谱(1) / 唱名(Re)</div>
+      </div>
+    </section>
+
+    <!-- 3. BOTTOM STRING & CONTROL DOCK -->
+    <footer class="bottom-dock">
+      <div class="string-header-row">
+        <div class="seg-control">
+          <button id="btnAutoString" type="button" class="seg-btn active">自动识弦</button>
+          <button id="btnManualString" type="button" class="seg-btn">手动锁弦</button>
+        </div>
+
+        <select id="selectPreset" class="preset-pill-select" title="切换定弦模式"></select>
+      </div>
+
+      <!-- String Selector Strip -->
+      <div id="stringsStrip" class="strings-strip"></div>
+
+      <!-- Bottom Action Buttons -->
+      <div class="action-bar">
+        <button id="btnRefTone" type="button" class="btn-ref-tone">
+          <span>🔊</span>
+          <span id="refToneLabel">听标准音</span>
+        </button>
+        <button id="btnMicToggle" type="button" class="btn-mic-main">
+          <span class="mic-level-dot"></span>
+          <span id="micBtnText">开启麦克风调音</span>
+        </button>
+      </div>
+    </footer>
+  </main>
+
+  <!-- BOTTOM SHEET: INSTRUMENT LIBRARY, FAVORITES & CUSTOM SORTING -->
+  <div id="instSheetBackdrop" class="sheet-backdrop">
+    <div class="sheet-panel">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <span class="sheet-title">选择乐器 · 收藏与排序</span>
+        <div style="display: flex; gap: 6px;">
+          <button id="btnToggleCustomForm" type="button" class="pill-btn" style="color: var(--blue);">+ 自定义</button>
+          <button id="btnToggleSort" type="button" class="pill-btn">排序</button>
+          <button id="btnCloseSheet" type="button" class="icon-btn">✕</button>
+        </div>
+      </div>
+
+      <!-- Add Custom Instrument Inline Box -->
+      <div id="customFormBox" class="custom-form-box">
+        <div style="font-size: 12px; font-weight: 700;">新建自定义乐器 (音名用逗号分隔，如 G4, D5)</div>
+        <div style="display: grid; grid-template-columns: 1fr 1.4fr; gap: 6px;">
+          <input id="inputCustomName" type="text" class="form-input" placeholder="名称 (如: 高胡)" />
+          <input id="inputCustomNotes" type="text" class="form-input" placeholder="各弦音名: G4, D5" value="G4, D5" />
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 6px;">
+          <button id="btnSaveCustom" type="button" class="pill-btn active-green" style="padding: 0 16px;">保存并选用</button>
+        </div>
+      </div>
+
+      <!-- Category Tabs -->
+      <div class="cat-tabs">
+        <button type="button" data-cat="all" class="cat-tab active">全部</button>
+        <button type="button" data-cat="fav" class="cat-tab">★ 收藏</button>
+        <button type="button" data-cat="eastern" class="cat-tab">东方民乐</button>
+        <button type="button" data-cat="western" class="cat-tab">西方乐器</button>
+      </div>
+
+      <!-- Instrument List -->
+      <div id="instListContainer" class="inst-list"></div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      // =======================================================================
+      // 1. INSTRUMENT DATABASE (EASTERN & WESTERN)
+      // =======================================================================
+      const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+      const SOLFEGE = ['Do', 'Do#', 'Re', 'Re#', 'Mi', 'Fa', 'Fa#', 'Sol', 'Sol#', 'La', 'La#', 'Si'];
+      const JIANPU = ['1', '#1', '2', '#2', '3', '4', '#4', '5', '#5', '6', '#6', '7'];
+
+      const DEFAULT_INSTRUMENTS = [
+        {
+          id: 'erhu', name: '二胡', category: 'eastern', favorite: true, dsp: 'strong', color: '#30D158',
+          presets: [
+            { name: '标准 D4-A4', strings: [{ label: '内弦', note: 'D4' }, { label: '外弦', note: 'A4' }] },
+            { name: '二泉 G3-D4', strings: [{ label: '内弦', note: 'G3' }, { label: '外弦', note: 'D4' }] },
+            { name: 'C调 C4-G4', strings: [{ label: '内弦', note: 'C4' }, { label: '外弦', note: 'G4' }] }
+          ]
+        },
+        {
+          id: 'guitar', name: '吉他 (6弦)', category: 'western', favorite: true, dsp: 'fast', color: '#FF9F0A',
+          presets: [
+            {
+              name: '标准 EADGBE',
+              strings: [
+                { label: '6弦', note: 'E2' }, { label: '5弦', note: 'A2' }, { label: '4弦', note: 'D3' },
+                { label: '3弦', note: 'G3' }, { label: '2弦', note: 'B3' }, { label: '1弦', note: 'E4' }
+              ]
+            },
+            {
+              name: 'Drop D',
+              strings: [
+                { label: '6弦', note: 'D2' }, { label: '5弦', note: 'A2' }, { label: '4弦', note: 'D3' },
+                { label: '3弦', note: 'G3' }, { label: '2弦', note: 'B3' }, { label: '1弦', note: 'E4' }
+              ]
+            }
+          ]
+        },
+        {
+          id: 'guzheng', name: '古筝 (21弦)', category: 'eastern', favorite: true, dsp: 'normal', color: '#0A84FF',
+          presets: [
+            {
+              name: 'D调五声 (21弦)',
+              strings: [
+                { label: '21弦', note: 'D2' }, { label: '20弦', note: 'E2' }, { label: '19弦', note: 'F#2' },
+                { label: '18绿', note: 'A2', green: true }, { label: '17弦', note: 'B2' }, { label: '16弦', note: 'D3' },
+                { label: '15弦', note: 'E3' }, { label: '14弦', note: 'F#3' }, { label: '13绿', note: 'A3', green: true },
+                { label: '12弦', note: 'B3' }, { label: '11弦', note: 'D4' }, { label: '10弦', note: 'E4' },
+                { label: '9弦', note: 'F#4' }, { label: '8绿', note: 'A4', green: true }, { label: '7弦', note: 'B4' },
+                { label: '6弦', note: 'D5' }, { label: '5弦', note: 'E5' }, { label: '4弦', note: 'F#5' },
+                { label: '3绿', note: 'A5', green: true }, { label: '2弦', note: 'B5' }, { label: '1弦', note: 'D6' }
+              ]
+            }
+          ]
+        },
+        {
+          id: 'violin', name: '小提琴', category: 'western', favorite: true, dsp: 'strong', color: '#BF5AF2',
+          presets: [
+            {
+              name: '标准 G3-D4-A4-E5',
+              strings: [{ label: '4弦G', note: 'G3' }, { label: '3弦D', note: 'D4' }, { label: '2弦A', note: 'A4' }, { label: '1弦E', note: 'E5' }]
+            }
+          ]
+        },
+        {
+          id: 'pipa', name: '琵琶', category: 'eastern', favorite: false, dsp: 'fast', color: '#FF453A',
+          presets: [
+            {
+              name: '标准 A2-D3-E3-A3',
+              strings: [{ label: '缠弦', note: 'A2' }, { label: '老弦', note: 'D3' }, { label: '中弦', note: 'E3' }, { label: '子弦', note: 'A3' }]
+            }
+          ]
+        },
+        {
+          id: 'ukulele', name: '尤克里里', category: 'western', favorite: false, dsp: 'fast', color: '#FF9F0A',
+          presets: [
+            {
+              name: '标准 G4-C4-E4-A4',
+              strings: [{ label: '4弦G', note: 'G4' }, { label: '3弦C', note: 'C4' }, { label: '2弦E', note: 'E4' }, { label: '1弦A', note: 'A4' }]
+            }
+          ]
+        },
+        {
+          id: 'guqin', name: '古琴 (7弦)', category: 'eastern', favorite: false, dsp: 'normal', color: '#5E5CE6',
+          presets: [
+            {
+              name: '正调 F调',
+              strings: [
+                { label: '一弦', note: 'C2' }, { label: '二弦', note: 'D2' }, { label: '三弦', note: 'F2' },
+                { label: '四弦', note: 'G2' }, { label: '五弦', note: 'A2' }, { label: '六弦', note: 'C3' }, { label: '七弦', note: 'D3' }
+              ]
+            }
+          ]
+        },
+        {
+          id: 'zhongruan', name: '中阮 / 柳琴', category: 'eastern', favorite: false, dsp: 'fast', color: '#30D158',
+          presets: [
+            { name: '中阮 G2-D3-G3-D4', strings: [{ label: '4弦', note: 'G2' }, { label: '3弦', note: 'D3' }, { label: '2弦', note: 'G3' }, { label: '1弦', note: 'D4' }] },
+            { name: '柳琴 G3-D4-G4-D5', strings: [{ label: '4弦', note: 'G3' }, { label: '3弦', note: 'D4' }, { label: '2弦', note: 'G4' }, { label: '1弦', note: 'D5' }] }
+          ]
+        },
+        {
+          id: 'cello', name: '大提琴 / 中提琴', category: 'western', favorite: false, dsp: 'strong', color: '#BF5AF2',
+          presets: [
+            { name: '大提琴 C2-G2-D3-A3', strings: [{ label: '4弦C', note: 'C2' }, { label: '3弦G', note: 'G2' }, { label: '2弦D', note: 'D3' }, { label: '1弦A', note: 'A3' }] },
+            { name: '中提琴 C3-G3-D4-A4', strings: [{ label: '4弦C', note: 'C3' }, { label: '3弦G', note: 'G3' }, { label: '2弦D', note: 'D4' }, { label: '1弦A', note: 'A4' }] }
+          ]
+        },
+        {
+          id: 'bass', name: '四弦贝斯', category: 'western', favorite: false, dsp: 'normal', color: '#0A84FF',
+          presets: [
+            { name: '标准 E1-A1-D2-G2', strings: [{ label: '4弦E', note: 'E1' }, { label: '3弦A', note: 'A1' }, { label: '2弦D', note: 'D2' }, { label: '1弦G', note: 'G2' }] }
+          ]
+        },
+        {
+          id: 'chromatic', name: '十二平均律全音域', category: 'western', favorite: false, dsp: 'normal', color: '#30D158',
+          presets: [
+            {
+              name: '全半音自动识别',
+              strings: [
+                { label: 'C4', note: 'C4' }, { label: 'D4', note: 'D4' }, { label: 'E4', note: 'E4' },
+                { label: 'F4', note: 'F4' }, { label: 'G4', note: 'G4' }, { label: 'A4', note: 'A4' }, { label: 'B4', note: 'B4' }
+              ]
+            }
+          ]
+        }
+      ];
+
+      // =======================================================================
+      // 2. STATE & PERSISTENCE
+      // =======================================================================
+      const A4_OPTIONS = [440, 442, 444, 432, 438];
+      const state = {
+        instruments: [],
+        instId: 'erhu',
+        presetIdx: 0,
+        stringIdx: 0,
+        autoString: true,
+        notation: 'letter',
+        dspLevel: 'strong',
+        a4Hz: 440,
+        lightMode: false,
+        catFilter: 'all',
+        sortMode: false,
+
+        micListening: false,
+        refPlaying: false,
+        isSignalActive: false,
+        lastSignalTimeMs: 0,
+        consecutiveVoicedFrames: 0,
+
+        targetNote: 'D4',
+        targetHz: 293.66,
+        measuredHz: 293.66,
+        stableCents: 0,
+        needleCents: 0,
+        medianBuf: [],
+        vibratoBuf: [],
+        lastTextUpdateMs: 0
+      };
+
+      function loadState() {
+        try {
+          const raw = localStorage.getItem('lvlv_native_v2_insts');
+          state.instruments = raw ? JSON.parse(raw) : JSON.parse(JSON.stringify(DEFAULT_INSTRUMENTS));
+          const cfg = JSON.parse(localStorage.getItem('lvlv_native_v2_cfg') || '{}');
+          if (cfg.instId) state.instId = cfg.instId;
+          if (cfg.a4Hz) state.a4Hz = cfg.a4Hz;
+          if (cfg.notation) state.notation = cfg.notation;
+          if (cfg.lightMode) {
+            state.lightMode = true;
+            document.documentElement.classList.add('light');
+          }
+        } catch (e) {
+          state.instruments = JSON.parse(JSON.stringify(DEFAULT_INSTRUMENTS));
+        }
+      }
+
+      function saveState() {
+        try {
+          localStorage.setItem('lvlv_native_v2_insts', JSON.stringify(state.instruments));
+          localStorage.setItem('lvlv_native_v2_cfg', JSON.stringify({
+            instId: state.instId,
+            a4Hz: state.a4Hz,
+            notation: state.notation,
+            lightMode: state.lightMode
+          }));
+        } catch (e) {}
+      }
+
+      // =======================================================================
+      // 3. PITCH MATH UTILITIES
+      // =======================================================================
+      function noteToMidi(noteStr) {
+        const m = String(noteStr).trim().match(/^([A-Ga-g])(#|b)?(\d)$/);
+        if (!m) return 62;
+        const map = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+        let semi = map[m[1].toUpperCase()];
+        if (m[2] === '#') semi += 1;
+        if (m[2] === 'b') semi -= 1;
+        return (parseInt(m[3], 10) + 1) * 12 + semi;
+      }
+
+      function midiToFreq(midi) {
+        return state.a4Hz * Math.pow(2, (midi - 69) / 12);
+      }
+
+      function noteToFreq(noteStr) {
+        return midiToFreq(noteToMidi(noteStr));
+      }
+
+      function getInst() {
+        return state.instruments.find(i => i.id === state.instId) || state.instruments[0];
+      }
+
+      function getPreset() {
+        const inst = getInst();
+        return inst.presets[state.presetIdx] || inst.presets[0];
+      }
+
+      function getStr() {
+        const p = getPreset();
+        return p.strings[state.stringIdx] || p.strings[0];
+      }
+
+      // =======================================================================
+      // 4. ZERO-JITTER AUDIO ENGINE (MIC + REFERENCE TONE)
+      // =======================================================================
+      let audioCtx = null;
+      let micStream = null;
+      let analyser = null;
+      let pcmBuf = null;
+      let refOsc = null;
+      let refGain = null;
+
+      function getAudioCtx() {
+        if (!audioCtx) {
+          const Ctx = window.AudioContext || window.webkitAudioContext;
+          audioCtx = new Ctx();
+        }
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        return audioCtx;
+      }
+
+      async function startMic() {
+        if (state.micListening) {
+          stopMic();
+          return;
+        }
+        stopRefTone();
+        try {
+          const ctx = getAudioCtx();
+          micStream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              echoCancellation: false,
+              autoGainControl: false,
+              noiseSuppression: false
+            }
+          });
+          const src = ctx.createMediaStreamSource(micStream);
+          analyser = ctx.createAnalyser();
+          analyser.fftSize = 4096;
+          src.connect(analyser);
+          pcmBuf = new Float32Array(analyser.fftSize);
+          state.micListening = true;
+          updateMicButtonUI();
+          updateReadoutUI(true);
+        } catch (err) {
+          state.micListening = false;
+          updateMicButtonUI();
+        }
+      }
+
+      function stopMic() {
+        if (micStream) {
+          micStream.getTracks().forEach(t => t.stop());
+          micStream = null;
+        }
+        state.micListening = false;
+        state.isSignalActive = false;
+        state.consecutiveVoicedFrames = 0;
+        updateMicButtonUI();
+        updateReadoutUI(true);
+      }
+
+      function updateMicButtonUI() {
+        const btn = document.getElementById('btnMicToggle');
+        const txt = document.getElementById('micBtnText');
+        if (state.micListening) {
+          btn.className = 'btn-mic-main listening';
+          txt.textContent = '正在拾音 · 请拉奏或拨弦';
+        } else {
+          btn.className = 'btn-mic-main';
+          txt.textContent = '开启麦克风调音';
+        }
+      }
+
+      function toggleRefTone() {
+        if (state.refPlaying) {
+          stopRefTone();
+          return;
+        }
+        if (state.micListening) stopMic();
+        const ctx = getAudioCtx();
+        const s = getStr();
+        const freq = noteToFreq(s.note);
+
+        refOsc = ctx.createOscillator();
+        refGain = ctx.createGain();
+        const real = new Float32Array([0, 1.0, 0.42, 0.25, 0.14, 0.07]);
+        const imag = new Float32Array(real.length);
+        refOsc.setPeriodicWave(ctx.createPeriodicWave(real, imag));
+        refOsc.frequency.setValueAtTime(freq, ctx.currentTime);
+
+        refGain.gain.setValueAtTime(0.001, ctx.currentTime);
+        refGain.gain.exponentialRampToValueAtTime(0.20, ctx.currentTime + 0.06);
+
+        refOsc.connect(refGain);
+        refGain.connect(ctx.destination);
+        refOsc.start();
+        state.refPlaying = true;
+        state.targetNote = s.note;
+        state.targetHz = freq;
+        state.measuredHz = freq;
+        state.stableCents = 0;
+        document.getElementById('btnRefTone').className = 'btn-ref-tone playing';
+        document.getElementById('refToneLabel').textContent = `停止 (${s.note})`;
+        updateReadoutUI(true);
+      }
+
+      function stopRefTone() {
+        if (refOsc) {
+          try { refOsc.stop(); refOsc.disconnect(); } catch (e) {}
+          refOsc = null;
+        }
+        state.refPlaying = false;
+        document.getElementById('btnRefTone').className = 'btn-ref-tone';
+        document.getElementById('refToneLabel').textContent = '听标准音';
+        updateReadoutUI(true);
+      }
+
+      function extractPitchHz(buf, sr) {
+        let sumSq = 0;
+        for (let i = 0; i < buf.length; i++) sumSq += buf[i] * buf[i];
+        const rms = Math.sqrt(sumSq / buf.length);
+        if (rms < 0.008) return null;
+
+        const minLag = Math.max(2, Math.floor(sr / 1500));
+        const maxLag = Math.min(Math.floor(sr / 36), Math.floor(buf.length / 2));
+        const nsdf = new Float32Array(maxLag);
+
+        for (let tau = minLag; tau < maxLag; tau++) {
+          let acf = 0, div = 0;
+          for (let i = 0; i < maxLag; i++) {
+            acf += buf[i] * buf[i + tau];
+            div += buf[i] * buf[i] + buf[i + tau] * buf[i + tau];
+          }
+          nsdf[tau] = div > 0 ? (2 * acf) / div : 0;
+        }
+
+        let bestLag = -1;
+        for (let tau = minLag + 1; tau < maxLag - 1; tau++) {
+          if (nsdf[tau] > 0.72 && nsdf[tau] > nsdf[tau - 1] && nsdf[tau] >= nsdf[tau + 1]) {
+            bestLag = tau;
+            break;
+          }
+        }
+        if (bestLag < 0) return null;
+
+        const y1 = nsdf[bestLag - 1], y2 = nsdf[bestLag], y3 = nsdf[bestLag + 1];
+        const denom = y1 - 2 * y2 + y3;
+        const shift = denom !== 0 ? (0.5 * (y1 - y3)) / denom : 0;
+        return sr / (bestLag + shift);
+      }
+
+      // =======================================================================
+      // 5. ANTI-JITTER FILTERING & HYSTERESIS STRING LOCK
+      // =======================================================================
+      function processPitchFrame(rawHz, nowMs) {
+        const inst = getInst();
+        const preset = getPreset();
+
+        if (inst.id === 'chromatic' && state.autoString) {
+          const midi = Math.round(69 + 12 * Math.log2(rawHz / state.a4Hz));
+          const mod = ((midi % 12) + 12) % 12;
+          const oct = Math.floor(midi / 12) - 1;
+          state.targetNote = NOTE_NAMES[mod] + oct;
+          state.targetHz = midiToFreq(midi);
+        } else if (state.autoString) {
+          let bestIdx = state.stringIdx;
+          let minDist = Infinity;
+          preset.strings.forEach((s, idx) => {
+            const sHz = noteToFreq(s.note);
+            const centsDist = Math.abs(1200 * Math.log2(rawHz / sHz));
+            const weighted = idx === state.stringIdx ? centsDist - 35 : centsDist;
+            if (weighted < minDist) {
+              minDist = weighted;
+              bestIdx = idx;
+            }
+          });
+          if (bestIdx !== state.stringIdx) {
+            state.stringIdx = bestIdx;
+            highlightActiveStringPill();
+          }
+          state.targetNote = preset.strings[state.stringIdx].note;
+          state.targetHz = noteToFreq(state.targetNote);
+        } else {
+          const s = getStr();
+          state.targetNote = s.note;
+          state.targetHz = noteToFreq(s.note);
+        }
+
+        const rawCents = Math.max(-50, Math.min(50, 1200 * Math.log2(rawHz / state.targetHz)));
+
+        state.medianBuf.push(rawCents);
+        if (state.medianBuf.length > 5) state.medianBuf.shift();
+        const sorted = [...state.medianBuf].sort((a, b) => a - b);
+        const medCents = sorted[Math.floor(sorted.length / 2)];
+
+        state.vibratoBuf.push({ t: nowMs, c: medCents });
+        const winMs = state.dspLevel === 'strong' ? 280 : state.dspLevel === 'normal' ? 160 : 70;
+        while (state.vibratoBuf.length > 1 && nowMs - state.vibratoBuf[0].t > winMs) {
+          state.vibratoBuf.shift();
+        }
+        const avgCents = state.vibratoBuf.reduce((a, b) => a + b.c, 0) / state.vibratoBuf.length;
+
+        const alpha = state.dspLevel === 'strong' ? 0.06 : state.dspLevel === 'normal' ? 0.14 : 0.28;
+        state.stableCents += alpha * (avgCents - state.stableCents);
+
+        if (Math.abs(state.stableCents) < 1.4) {
+          state.stableCents *= 0.75;
+        }
+
+        state.measuredHz = state.targetHz * Math.pow(2, state.stableCents / 1200);
+      }
+
+      // =======================================================================
+      // 6. FIXED-DIMENSION HARDWARE CANVAS GAUGE RENDERER
+      // =======================================================================
+      const canvas = document.getElementById('gaugeCanvas');
+      const ctx = canvas.getContext('2d');
+
+      function drawGauge() {
+        const w = canvas.width;
+        const h = canvas.height;
+        ctx.clearRect(0, 0, w, h);
+
+        const cx = w / 2;
+        const cy = h * 0.88;
+        const r = 250;
+        const maxAngle = (72 * Math.PI) / 180;
+
+        const active = state.isSignalActive || state.refPlaying;
+        const targetNeedle = state.isSignalActive ? state.stableCents : 0;
+        state.needleCents += (targetNeedle - state.needleCents) * 0.18;
+        const c = Math.max(-50, Math.min(50, state.needleCents));
+
+        // 1. Base Track Arc
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, -Math.PI / 2 - maxAngle, -Math.PI / 2 + maxAngle);
+        ctx.strokeStyle = state.lightMode ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.10)';
+        ctx.lineWidth = 16;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+
+        // 2. Center Sweet-Spot Zone (±4 cents)
+        const sweetAngle = (4 / 50) * maxAngle;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, -Math.PI / 2 - sweetAngle, -Math.PI / 2 + sweetAngle);
+        ctx.strokeStyle = '#30D158';
+        ctx.lineWidth = 16;
+        ctx.stroke();
+
+        // 3. Ticks (-50 to +50)
+        ctx.font = '600 19px "SF Mono", monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        for (let tick = -50; tick <= 50; tick += 5) {
+          const ang = -Math.PI / 2 + (tick / 50) * maxAngle;
+          const isMajor = tick % 10 === 0;
+          const rIn = r - (tick === 0 ? 32 : isMajor ? 24 : 15);
+          const rOut = r - 8;
+
+          ctx.beginPath();
+          ctx.moveTo(cx + Math.cos(ang) * rIn, cy + Math.sin(ang) * rIn);
+          ctx.lineTo(cx + Math.cos(ang) * rOut, cy + Math.sin(ang) * rOut);
+          ctx.strokeStyle = tick === 0 ? '#30D158' : (state.lightMode ? 'rgba(0,0,0,0.28)' : 'rgba(255,255,255,0.30)');
+          ctx.lineWidth = tick === 0 ? 5 : isMajor ? 3 : 2;
+          ctx.stroke();
+
+          if (tick % 20 === 0 && tick !== 0) {
+            const rl = r + 30;
+            ctx.fillStyle = state.lightMode ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.45)';
+            ctx.fillText(tick > 0 ? `+${tick}` : `${tick}`, cx + Math.cos(ang) * rl, cy + Math.sin(ang) * rl);
+          }
+        }
+
+        // 4. Needle & Active Arc
+        const needleAng = -Math.PI / 2 + (c / 50) * maxAngle;
+        let color = '#30D158';
+        if (!active) {
+          color = state.lightMode ? '#8E8E93' : '#636366';
+        } else if (state.refPlaying) {
+          color = '#0A84FF';
+        } else if (Math.abs(c) > 14) {
+          color = '#FF453A';
+        } else if (Math.abs(c) > 4.5) {
+          color = '#FF9F0A';
+        }
+
+        if (active) {
+          ctx.beginPath();
+          if (c >= 0) ctx.arc(cx, cy, r, -Math.PI / 2, needleAng);
+          else ctx.arc(cx, cy, r, needleAng, -Math.PI / 2);
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 16;
+          ctx.lineCap = 'round';
+          ctx.stroke();
+        }
+
+        const nx1 = cx + Math.cos(needleAng) * 70;
+        const ny1 = cy + Math.sin(needleAng) * 70;
+        const nx2 = cx + Math.cos(needleAng) * r;
+        const ny2 = cy + Math.sin(needleAng) * r;
+
+        ctx.beginPath();
+        ctx.moveTo(nx1, ny1);
+        ctx.lineTo(nx2, ny2);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 7;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(nx2, ny2, 13, 0, Math.PI * 2);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fill();
+        ctx.lineWidth = 6;
+        ctx.strokeStyle = color;
+        ctx.stroke();
+      }
+
+      // =======================================================================
+      // 7. THROTTLED, ZERO-REFLOW READOUT UPDATES
+      // =======================================================================
+      function updateReadoutUI(force = false) {
+        const now = performance.now();
+        if (!force && now - state.lastTextUpdateMs < 180) return;
+        state.lastTextUpdateMs = now;
+
+        const midi = noteToMidi(state.targetNote);
+        const mod = ((midi % 12) + 12) % 12;
+        const oct = Math.floor(midi / 12) - 1;
+        const letter = NOTE_NAMES[mod] + oct;
+        const jianpu = JIANPU[mod];
+        const solfege = SOLFEGE[mod];
+        const strObj = getStr();
+        const sLabel = strObj ? strObj.label : '';
+
+        const mainEl = document.getElementById('mainNoteText');
+        const subEl = document.getElementById('subNoteBadge');
+
+        if (state.notation === 'letter') {
+          mainEl.textContent = letter;
+          subEl.textContent = `${sLabel} · 简谱 ${jianpu} (${solfege})`;
+        } else if (state.notation === 'jianpu') {
+          mainEl.textContent = jianpu;
+          subEl.textContent = `${sLabel} · ${letter} (${solfege})`;
+        } else {
+          mainEl.textContent = solfege;
+          subEl.textContent = `${sLabel} · ${letter} (简谱 ${jianpu})`;
+        }
+
+        const dirL = document.getElementById('dirLeft');
+        const dirC = document.getElementById('dirCenter');
+        const dirR = document.getElementById('dirRight');
+        const freqEl = document.getElementById('freqReadoutText');
+
+        if (state.refPlaying) {
+          mainEl.style.color = 'var(--blue)';
+          dirL.className = 'dir-left';
+          dirR.className = 'dir-right';
+          dirC.className = 'dir-center lit-blue';
+          dirC.textContent = '🔊 基准音发声中';
+          freqEl.textContent = `标准频率 ${state.targetHz.toFixed(1)} Hz (0 音分)`;
+          return;
+        }
+
+        if (!state.isSignalActive) {
+          mainEl.style.color = 'var(--text)';
+          dirL.className = 'dir-left';
+          dirR.className = 'dir-right';
+          dirC.className = 'dir-center';
+          dirC.textContent = state.micListening ? '请拨弦或拉奏' : '待机 · 点击下方拾音';
+          freqEl.textContent = `目标 ${state.targetHz.toFixed(1)} Hz · 实测 --.- Hz`;
+          return;
+        }
+
+        const roundedCents = Math.round(state.stableCents);
+        const absC = Math.abs(state.stableCents);
+        const signStr = roundedCents > 0 ? `+${roundedCents}` : `${roundedCents}`;
+        freqEl.textContent = `目标 ${state.targetHz.toFixed(1)} Hz · 实测 ${state.measuredHz.toFixed(1)} Hz (${signStr} 音分)`;
+
+        if (absC <= 4.5) {
+          mainEl.style.color = 'var(--green)';
+          dirL.className = 'dir-left';
+          dirR.className = 'dir-right';
+          dirC.className = 'dir-center lit-green';
+          dirC.textContent = '✓ 音准完美';
+        } else if (state.stableCents < -4.5) {
+          mainEl.style.color = 'var(--amber)';
+          dirL.className = 'dir-left lit';
+          dirR.className = 'dir-right';
+          dirC.className = 'dir-center lit-amber';
+          dirC.textContent = `偏低 ${roundedCents} 音分`;
+        } else {
+          mainEl.style.color = 'var(--red)';
+          dirL.className = 'dir-left';
+          dirR.className = 'dir-right lit';
+          dirC.className = 'dir-center lit-red';
+          dirC.textContent = `偏高 +${roundedCents} 音分`;
+        }
+      }
+
+      // =======================================================================
+      // 8. STATIC DOM BUILDERS (CALLED ONLY ON USER SELECTION, NEVER IN LOOP)
+      // =======================================================================
+      function syncTopAndStringsUI() {
+        const inst = getInst();
+        const preset = getPreset();
+
+        document.getElementById('topInstDot').style.background = inst.color || '#30D158';
+        document.getElementById('topInstName').textContent = `${inst.name} · ${preset.name}`;
+
+        const sel = document.getElementById('selectPreset');
+        sel.innerHTML = '';
+        inst.presets.forEach((p, idx) => {
+          const opt = document.createElement('option');
+          opt.value = String(idx);
+          opt.textContent = p.name;
+          if (idx === state.presetIdx) opt.selected = true;
+          sel.appendChild(opt);
+        });
+
+        const strip = document.getElementById('stringsStrip');
+        strip.innerHTML = '';
+        preset.strings.forEach((s, idx) => {
+          const hz = noteToFreq(s.note);
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.setAttribute('data-str-idx', String(idx));
+          btn.className = 'string-btn' + (s.green ? ' green-mark' : '') + (idx === state.stringIdx ? ' active' : '');
+          btn.innerHTML = `
+            <span class="s-label">${s.label}</span>
+            <span class="s-note">${s.note}</span>
+            <span class="s-hz">${hz.toFixed(1)}Hz</span>
+          `;
+          btn.addEventListener('click', () => {
+            state.stringIdx = idx;
+            state.targetNote = s.note;
+            state.targetHz = noteToFreq(s.note);
+            highlightActiveStringPill();
+            updateReadoutUI(true);
+            if (state.refPlaying) {
+              stopRefTone();
+              toggleRefTone();
+            }
+          });
+          strip.appendChild(btn);
+        });
+
+        const curStr = getStr();
+        state.targetNote = curStr.note;
+        state.targetHz = noteToFreq(curStr.note);
+        updateReadoutUI(true);
+      }
+
+      function highlightActiveStringPill() {
+        const btns = document.querySelectorAll('#stringsStrip .string-btn');
+        btns.forEach((b, idx) => {
+          if (idx === state.stringIdx) b.classList.add('active');
+          else b.classList.remove('active');
+        });
+      }
+
+      function renderSheetList() {
+        const box = document.getElementById('instListContainer');
+        box.innerHTML = '';
+
+        const list = state.instruments.filter(i => {
+          if (state.catFilter === 'fav') return i.favorite;
+          if (state.catFilter === 'eastern') return i.category === 'eastern';
+          if (state.catFilter === 'western') return i.category === 'western';
+          return true;
+        });
+
+        list.forEach((inst) => {
+          const realIdx = state.instruments.findIndex(x => x.id === inst.id);
+          const item = document.createElement('div');
+          item.className = 'inst-item' + (inst.id === state.instId ? ' selected' : '');
+          const notesPreview = inst.presets[0].strings.slice(0, 6).map(s => s.note).join(' · ');
+
+          item.innerHTML = `
+            <div class="inst-item-left" data-pick="${inst.id}">
+              <div class="inst-avatar" style="background: ${inst.color || '#30D158'}">${inst.name.slice(0, 1)}</div>
+              <div class="inst-meta">
+                <div class="inst-meta-title">
+                  <span>${inst.name}</span>
+                  <span class="inst-tag">${inst.category === 'eastern' ? '东方民乐' : '西方乐器'}</span>
+                </div>
+                <div class="inst-meta-sub">定弦: ${notesPreview}</div>
+              </div>
+            </div>
+            <div class="inst-item-actions">
+              ${
+                state.sortMode
+                  ? `
+                    <button type="button" class="mini-btn" data-top="${realIdx}">置顶</button>
+                    <button type="button" class="mini-btn" data-up="${realIdx}">↑</button>
+                    <button type="button" class="mini-btn" data-down="${realIdx}">↓</button>
+                  `
+                  : ''
+              }
+              <button type="button" class="star-btn ${inst.favorite ? 'fav' : ''}" data-fav="${inst.id}">★</button>
+            </div>
+          `;
+
+          item.querySelector(`[data-pick="${inst.id}"]`).addEventListener('click', () => {
+            state.instId = inst.id;
+            state.presetIdx = 0;
+            state.stringIdx = 0;
+            state.dspLevel = inst.dsp || 'normal';
+            syncDspButtonUI();
+            syncTopAndStringsUI();
+            saveState();
+            document.getElementById('instSheetBackdrop').classList.remove('open');
+          });
+
+          item.querySelector(`[data-fav="${inst.id}"]`).addEventListener('click', (e) => {
+            e.stopPropagation();
+            inst.favorite = !inst.favorite;
+            saveState();
+            renderSheetList();
+          });
+
+          if (state.sortMode) {
+            item.querySelector(`[data-top="${realIdx}"]`).addEventListener('click', (e) => {
+              e.stopPropagation();
+              moveInst(realIdx, 0);
+            });
+            item.querySelector(`[data-up="${realIdx}"]`).addEventListener('click', (e) => {
+              e.stopPropagation();
+              if (realIdx > 0) moveInst(realIdx, realIdx - 1);
+            });
+            item.querySelector(`[data-down="${realIdx}"]`).addEventListener('click', (e) => {
+              e.stopPropagation();
+              if (realIdx < state.instruments.length - 1) moveInst(realIdx, realIdx + 1);
+            });
+          }
+
+          box.appendChild(item);
+        });
+      }
+
+      function moveInst(from, to) {
+        if (from === to) return;
+        const [m] = state.instruments.splice(from, 1);
+        state.instruments.splice(to, 0, m);
+        saveState();
+        renderSheetList();
+      }
+
+      function syncDspButtonUI() {
+        const btn = document.getElementById('btnCycleDsp');
+        const txt = document.getElementById('dspBtnText');
+        if (state.dspLevel === 'strong') {
+          btn.className = 'pill-btn active-green';
+          txt.textContent = '稳音: 强(二胡)';
+        } else if (state.dspLevel === 'normal') {
+          btn.className = 'pill-btn';
+          txt.textContent = '稳音: 均衡';
+        } else {
+          btn.className = 'pill-btn';
+          txt.textContent = '稳音: 灵敏';
+        }
+      }
+
+      // =======================================================================
+      // 9. MAIN LOOP
+      // =======================================================================
+      function loop(nowMs) {
+        if (state.micListening && analyser && pcmBuf) {
+          analyser.getFloatTimeDomainData(pcmBuf);
+          const hz = extractPitchHz(pcmBuf, audioCtx.sampleRate);
+          if (hz && hz >= 35 && hz <= 1500) {
+            state.consecutiveVoicedFrames += 1;
+            if (state.consecutiveVoicedFrames >= 3) {
+              state.isSignalActive = true;
+              state.lastSignalTimeMs = nowMs;
+              processPitchFrame(hz, nowMs);
+            }
+          } else {
+            state.consecutiveVoicedFrames = 0;
+            if (state.isSignalActive && nowMs - state.lastSignalTimeMs > 1600) {
+              state.isSignalActive = false;
+              state.medianBuf = [];
+              state.vibratoBuf = [];
+            }
+          }
+        }
+
+        drawGauge();
+        updateReadoutUI(false);
+        requestAnimationFrame(loop);
+      }
+
+      // =======================================================================
+      // 10. EVENT BINDINGS
+      // =======================================================================
+      function initEvents() {
+        document.getElementById('btnMicToggle').addEventListener('click', startMic);
+        document.getElementById('btnRefTone').addEventListener('click', toggleRefTone);
+
+        document.getElementById('btnCycleDsp').addEventListener('click', () => {
+          const order = ['strong', 'normal', 'fast'];
+          state.dspLevel = order[(order.indexOf(state.dspLevel) + 1) % order.length];
+          syncDspButtonUI();
+        });
+
+        document.getElementById('btnCycleA4').addEventListener('click', () => {
+          const next = A4_OPTIONS[(A4_OPTIONS.indexOf(state.a4Hz) + 1) % A4_OPTIONS.length];
+          state.a4Hz = next;
+          document.getElementById('a4BtnText').textContent = `${next}Hz`;
+          syncTopAndStringsUI();
+          saveState();
+        });
+
+        document.getElementById('btnToggleTheme').addEventListener('click', () => {
+          state.lightMode = !state.lightMode;
+          document.documentElement.classList.toggle('light', state.lightMode);
+          saveState();
+        });
+
+        document.getElementById('btnCycleNotation').addEventListener('click', () => {
+          const modes = ['letter', 'jianpu', 'solfege'];
+          state.notation = modes[(modes.indexOf(state.notation) + 1) % modes.length];
+          updateReadoutUI(true);
+          saveState();
+        });
+
+        const btnAuto = document.getElementById('btnAutoString');
+        const btnMan = document.getElementById('btnManualString');
+        btnAuto.addEventListener('click', () => {
+          state.autoString = true;
+          btnAuto.className = 'seg-btn active';
+          btnMan.className = 'seg-btn';
+        });
+        btnMan.addEventListener('click', () => {
+          state.autoString = false;
+          btnMan.className = 'seg-btn active';
+          btnAuto.className = 'seg-btn';
+        });
+
+        document.getElementById('selectPreset').addEventListener('change', (e) => {
+          state.presetIdx = parseInt(e.target.value, 10) || 0;
+          state.stringIdx = 0;
+          syncTopAndStringsUI();
+        });
+
+        const sheet = document.getElementById('instSheetBackdrop');
+        document.getElementById('btnOpenInstSheet').addEventListener('click', () => {
+          renderSheetList();
+          sheet.classList.add('open');
+        });
+        document.getElementById('btnCloseSheet').addEventListener('click', () => {
+          sheet.classList.remove('open');
+        });
+        sheet.addEventListener('click', (e) => {
+          if (e.target === sheet) sheet.classList.remove('open');
+        });
+
+        document.getElementById('btnToggleSort').addEventListener('click', (e) => {
+          state.sortMode = !state.sortMode;
+          e.currentTarget.classList.toggle('active-green', state.sortMode);
+          e.currentTarget.textContent = state.sortMode ? '完成排序' : '排序';
+          renderSheetList();
+        });
+
+        document.getElementById('btnToggleCustomForm').addEventListener('click', () => {
+          document.getElementById('customFormBox').classList.toggle('open');
+        });
+
+        document.getElementById('btnSaveCustom').addEventListener('click', () => {
+          const name = document.getElementById('inputCustomName').value.trim();
+          const notes = document.getElementById('inputCustomNotes').value.split(',').map(s => s.trim()).filter(s => /^[A-Ga-g](#|b)?\d$/.test(s));
+          if (!name || notes.length === 0) return;
+          const id = 'custom_' + Date.now();
+          state.instruments.unshift({
+            id,
+            name,
+            category: 'eastern',
+            favorite: true,
+            dsp: 'strong',
+            color: '#0A84FF',
+            presets: [{
+              name: `自定义 (${notes.join('-')})`,
+              strings: notes.map((n, i) => ({ label: `${i + 1}弦`, note: n.charAt(0).toUpperCase() + n.slice(1) }))
+            }]
+          });
+          state.instId = id;
+          state.presetIdx = 0;
+          state.stringIdx = 0;
+          saveState();
+          document.getElementById('customFormBox').classList.remove('open');
+          syncTopAndStringsUI();
+          sheet.classList.remove('open');
+        });
+
+        document.querySelectorAll('.cat-tab').forEach(tab => {
+          tab.addEventListener('click', () => {
+            state.catFilter = tab.getAttribute('data-cat');
+            document.querySelectorAll('.cat-tab').forEach(t => t.classList.toggle('active', t === tab));
+            renderSheetList();
+          });
+        });
+      }
+
+      loadState();
+      document.getElementById('a4BtnText').textContent = `${state.a4Hz}Hz`;
+      syncDspButtonUI();
+      syncTopAndStringsUI();
+      initEvents();
+      requestAnimationFrame(loop);
+    })();
+  </script>
+</body>
+</html>
